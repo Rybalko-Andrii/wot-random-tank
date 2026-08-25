@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111214">
+  <title>WoT Random Tank</title>
+
+  <style>
+    :root {
+      --bg: #111214;
+      --card: #1a1c1f;
+      --card-2: #24272b;
+      --line: #34383d;
+      --text: #f5f5f5;
+      --muted: #aeb4bb;
+      --red: #d33a22;
+      --red-active: #b82d19;
+      --danger: #8f2318;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100dvh;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 760px;
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding: max(20px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+    }
+
+    .header {
+      text-align: center;
+      margin: 8px 0 28px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: clamp(30px, 9vw, 48px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .header p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: clamp(16px, 4.8vw, 22px);
+      line-height: 1.4;
+    }
+
+    .tank-card {
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 28px 20px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--card);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .22);
+    }
+
+    .tank-label {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .tank-name {
+      margin: 0;
+      font-size: clamp(42px, 12vw, 78px);
+      line-height: 1.08;
+      word-break: break-word;
+    }
+
+    .controls {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .random-button,
+    .secondary-button {
+      min-height: 74px;
+      border-radius: 20px;
+      padding: 14px 18px;
+      font-weight: 800;
+      font-size: clamp(18px, 5vw, 24px);
+    }
+
+    .random-button {
+      width: 100%;
+      background: var(--red);
+      color: white;
+      box-shadow: 0 8px 20px rgba(211, 58, 34, .22);
+    }
+
+    .random-button:active {
+      background: var(--red-active);
+      transform: translateY(1px);
+    }
+
+    .secondary-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .secondary-button {
+      background: #303338;
+      color: var(--text);
+    }
+
+    .secondary-button:active {
+      background: #3b3f45;
+      transform: translateY(1px);
+    }
+
+    .counter {
+      margin: 20px 0 0;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      text-align: center;
+      font-size: 15px;
+    }
+
+    dialog {
+      width: min(100% - 24px, 680px);
+      max-height: min(82dvh, 720px);
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .55);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, .72);
+    }
+
+    .dialog-content {
+      padding: 20px;
+    }
+
+    .dialog-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .dialog-head h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .close-button {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #303338;
+      color: white;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .add-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .tank-input {
+      width: 100%;
+      min-height: 58px;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      outline: none;
+      background: #111214;
+      color: white;
+      font-size: 18px;
+    }
+
+    .tank-input:focus {
+      border-color: #737982;
+    }
+
+    .submit-button {
+      min-height: 58px;
+      border-radius: 16px;
+      background: var(--red);
+      color: white;
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .empty-message {
+      margin: 0;
+      padding: 24px 0;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .tank-list {
+      display: grid;
+      gap: 10px;
+      max-height: 58dvh;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .tank-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 10px 10px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card-2);
+    }
+
+    .tank-item-name {
+      min-width: 0;
+      font-size: 17px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .delete-button {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--danger);
+      color: white;
+      font-size: 20px;
+    }
+
+    .delete-button:active {
+      transform: scale(.96);
+    }
+
+    .shake {
+      animation: shake .28s ease-in-out;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    @media (min-width: 761px) {
+      .app {
+        padding-left: 24px;
+        padding-right: 24px;
+      }
+
+      .tank-card {
+        min-height: 360px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header class="header">
+      <h1>WoT Random Tank</h1>
+      <p>Випадковий танк з твого списку. Повтори можливі.</p>
+    </header>
+
+    <section class="tank-card" aria-live="polite">
+      <div>
+        <p class="tank-label">Випав танк</p>
+        <h2 id="tankName" class="tank-name">Натисни кнопку</h2>
+      </div>
+    </section>
+
+    <section class="controls">
+      <button id="randomButton" class="random-button" type="button">ВИПАДКОВО ОБРАТИ ТАНК</button>
+
+      <div class="secondary-row">
+        <button id="addButton" class="secondary-button" type="button">Додати танк</button>
+        <button id="listButton" class="secondary-button" type="button">Список танків</button>
+      </div>
+    </section>
+
+    <p id="counter" class="counter"></p>
+  </main>
+
+  <dialog id="addDialog">
+    <div class="dialog-content">
+      <div class="dialog-head">
+        <h2>Додати танк</h2>
+        <button class="close-button" type="button" data-close="addDialog" aria-label="Закрити">×</button>
+      </div>
+
+      <form id="addForm" class="add-form">
+        <input
+          id="tankInput"
+          class="tank-input"
+          type="text"
+          placeholder="Наприклад: Vz. 55"
+          autocomplete="off"
+          required
+        >
+        <button class="submit-button" type="submit">Додати</button>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="listDialog">
+    <div class="dialog-content">
+      <div class="dialog-head">
+        <h2>Список танків</h2>
+        <button class="close-button" type="button" data-close="listDialog" aria-label="Закрити">×</button>
+      </div>
+
+      <div id="tankList" class="tank-list"></div>
+    </div>
+  </dialog>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const DEFAULT_TANKS = [
+        "Rhm. Pzw.",
+        "E 50 M",
+        "Leopard 1",
+        "E 100",
+        "Maus",
+        "Pz.Kpfw. VII",
+        "Grille 15",
+        "Jg.Pz. E 100",
+        "G.W. E 100",
+        "T-100 LT",
+        "K-91",
+        "Об. 140",
+        "Об. 430У",
+        "Об. 140 Х",
+        "ИС-4",
+        "ИС-7",
+        "Об. 277",
+        "Об. 705А",
+        "СТ-II",
+        "Об. 260",
+        "Об. 452К",
+        "Об. 261",
+        "M48 Patton",
+        "M60",
+        "M-V-Y",
+        "T110E5",
+        "T57 Heavy",
+        "Stinger",
+        "T57 Heavy",
+        "T110E3",
+        "T110E4",
+        "T92 HMC",
+        "AMX 13 105",
+        "EBR 105",
+        "AMX 30 B",
+        "B-C 25 t",
+        "AMX 50 B",
+        "AMX M4 54",
+        "Foch B",
+        "Foch 155",
+        "B-C 155 58",
+        "Centurion AX",
+        "Conqueror",
+        "S. Conqueror",
+        "FV4005",
+        "FV215b 183",
+        "Conqueror GC",
+        "121",
+        "121B",
+        "113",
+        "WZ-111 5A",
+        "STB-1",
+        "Type 5 Heavy",
+        "TVP T 50/51",
+        "Vz. 55",
+        "Kransvagn",
+        "Kranvagn",
+        "Project 65",
+        "Carro 45 t",
+        "Rinoceronte",
+        "Minotauro"
+      ];
+
+      const STORAGE_KEY = "wot-random-tank-list-v3";
+
+      const tankName = document.getElementById("tankName");
+      const randomButton = document.getElementById("randomButton");
+      const addButton = document.getElementById("addButton");
+      const listButton = document.getElementById("listButton");
+      const addDialog = document.getElementById("addDialog");
+      const listDialog = document.getElementById("listDialog");
+      const addForm = document.getElementById("addForm");
+      const tankInput = document.getElementById("tankInput");
+      const tankList = document.getElementById("tankList");
+      const counter = document.getElementById("counter");
+
+      function loadTanks() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+
+          if (!saved) {
+            return [...DEFAULT_TANKS];
+          }
+
+          const parsed = JSON.parse(saved);
+
+          if (Array.isArray(parsed) && parsed.every(item => typeof item === "string")) {
+            return parsed;
+          }
+        } catch (error) {
+          console.error("Не вдалося завантажити список танків:", error);
+        }
+
+        return [...DEFAULT_TANKS];
+      }
+
+      let tanks = loadTanks();
+
+      function saveTanks() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(tanks));
+        } catch (error) {
+          console.error("Не вдалося зберегти список танків:", error);
+        }
+      }
+
+      function updateCounter() {
+        const count = tanks.length;
+        counter.textContent = `У списку: ${count} ${count === 1 ? "танк" : "танків"}`;
+      }
+
+      function getRandomTank() {
+        if (tanks.length === 0) {
+          tankName.textContent = "Список порожній";
+          tankName.classList.remove("shake");
+          void tankName.offsetWidth;
+          tankName.classList.add("shake");
+          return;
+        }
+
+        const randomIndex = Math.floor(Math.random() * tanks.length);
+        tankName.textContent = tanks[randomIndex];
+
+        tankName.classList.remove("shake");
+        void tankName.offsetWidth;
+        tankName.classList.add("shake");
+      }
+
+      function renderList() {
+        tankList.innerHTML = "";
+
+        if (tanks.length === 0) {
+          const message = document.createElement("p");
+          message.className = "empty-message";
+          message.textContent = "Список порожній.";
+          tankList.appendChild(message);
+          return;
+        }
+
+        tanks.forEach((name, index) => {
+          const item = document.createElement("div");
+          item.className = "tank-item";
+
+          const nameElement = document.createElement("span");
+          nameElement.className = "tank-item-name";
+          nameElement.textContent = name;
+
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "delete-button";
+          deleteButton.type = "button";
+          deleteButton.textContent = "🗑";
+          deleteButton.setAttribute("aria-label", `Видалити ${name}`);
+
+          deleteButton.addEventListener("click", () => {
+            tanks.splice(index, 1);
+            saveTanks();
+            updateCounter();
+            renderList();
+
+            if (tankName.textContent === name) {
+              tankName.textContent = tanks.length > 0 ? "Натисни кнопку" : "Список порожній";
+            }
+          });
+
+          item.append(nameElement, deleteButton);
+          tankList.appendChild(item);
+        });
+      }
+
+      function openDialog(dialog) {
+        if (typeof dialog.showModal === "function") {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute("open", "");
+        }
+      }
+
+      function closeDialog(dialog) {
+        if (typeof dialog.close === "function") {
+          dialog.close();
+        } else {
+          dialog.removeAttribute("open");
+        }
+      }
+
+      randomButton.addEventListener("click", getRandomTank);
+
+      addButton.addEventListener("click", () => {
+        openDialog(addDialog);
+        setTimeout(() => tankInput.focus(), 50);
+      });
+
+      listButton.addEventListener("click", () => {
+        renderList();
+        openDialog(listDialog);
+      });
+
+      addForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const newTank = tankInput.value.trim();
+
+        if (!newTank) {
+          tankInput.focus();
+          return;
+        }
+
+        tanks.push(newTank);
+        saveTanks();
+        updateCounter();
+
+        tankInput.value = "";
+        closeDialog(addDialog);
+      });
+
+      document.querySelectorAll("[data-close]").forEach(button => {
+        button.addEventListener("click", () => {
+          const dialog = document.getElementById(button.dataset.close);
+          closeDialog(dialog);
+        });
+      });
+
+      [addDialog, listDialog].forEach(dialog => {
+        dialog.addEventListener("click", event => {
+          if (event.target === dialog) {
+            closeDialog(dialog);
+          }
+        });
+      });
+
+      updateCounter();
+    })();
+  </script>
+</body>
+</html>
