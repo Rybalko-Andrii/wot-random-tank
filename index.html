@@ -46,24 +46,46 @@
   #history li { margin: 7px 0; }
   .empty { color: #777; list-style: none; margin-left: -24px; }
   .done { color: #8bc34a; }
+  .add-panel {
+    display: none;
+    gap: 10px;
+    margin-top: 10px;
+    flex-direction: column;
+  }
+  .add-panel.show { display: flex; }
+  .add-panel input {
+    width: 100%;
+    border: 1px solid #444;
+    border-radius: 12px;
+    background: #252525;
+    color: #fff;
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+  #saveTank { background: #355c2a; color: white; }
 </style>
 </head>
 <body>
 <div class="app">
   <h1>🎲 WoT Random Tank</h1>
-  <div class="sub">Випадковий танк із твого списку — без повторів</div>
+  <div class="sub">Випадковий танк із твого списку — повтори можливі</div>
 
   <div class="card">
     <div class="label">Наступний танк</div>
     <div id="tankName">Натисни кнопку 🎲</div>
     <div id="nation"></div>
-    <div id="counter"></div>
   </div>
 
   <button id="pick">🎲 ВИПАДКОВО ОБРАТИ ТАНК</button>
   <div class="row">
-    <button id="reset">🔄 Скинути список</button>
+    <button id="addTank">➕ Додати танк</button>
     <button id="clearHistory">🗑 Очистити історію</button>
+  </div>
+
+  <div id="addPanel" class="add-panel">
+    <input id="newTankName" type="text" placeholder="Назва нового танка">
+    <input id="newTankNation" type="text" placeholder="Країна або прапор, наприклад Україна 🇺🇦">
+    <button id="saveTank">Додати до списку</button>
   </div>
 
   <div class="history">
@@ -80,10 +102,10 @@ const tanks = [
   ["Grille 15", "Німеччина 🇩🇪"], ["Jg.Pz. E 100", "Німеччина 🇩🇪"],
   ["G.W. E 100", "Німеччина 🇩🇪"],
 
-  ["T-100 LT", "СРСР 🇷🇺"], ["K-91", "СРСР 🇷🇺"], ["Об. 140", "СРСР 🇷🇺"],
-  ["Об. 430У", "СРСР 🇷🇺"], ["Об. 705А", "СРСР 🇷🇺"], ["ІС-4", "СРСР 🇷🇺"],
-  ["ІС-7", "СРСР 🇷🇺"], ["Об. 277", "СРСР 🇷🇺"], ["СТ-II", "СРСР 🇷🇺"],
-  ["Об. 260", "СРСР 🇷🇺"], ["Об. 452К", "СРСР 🇷🇺"], ["Об. 261", "СРСР 🇷🇺"],
+  ["T-100 LT", "СРСР 🇺🇦"], ["K-91", "СРСР 🇺🇦"], ["Об. 140", "СРСР 🇺🇦"],
+  ["Об. 430У", "СРСР 🇺🇦"], ["Об. 705А", "СРСР 🇺🇦"], ["ІС-4", "СРСР 🇺🇦"],
+  ["ІС-7", "СРСР 🇺🇦"], ["Об. 277", "СРСР 🇺🇦"], ["СТ-II", "СРСР 🇺🇦"],
+  ["Об. 260", "СРСР 🇺🇦"], ["Об. 452К", "СРСР 🇺🇦"], ["Об. 261", "СРСР 🇺🇦"],
 
   ["M48 Patton", "США 🇺🇸"], ["M60", "США 🇺🇸"], ["M-V-Y", "США 🇺🇸"],
   ["T110E5", "США 🇺🇸"], ["T57 Heavy", "США 🇺🇸"], ["Stinger", "США 🇺🇸"],
@@ -112,22 +134,23 @@ const tanks = [
   ["Rinoceronte", "Італія 🇮🇹"], ["Minotauro", "Італія 🇮🇹"]
 ];
 
-let remaining = JSON.parse(localStorage.getItem("wotRemaining") || "null") || [...tanks];
+let customTanks = JSON.parse(localStorage.getItem("wotCustomTanks") || "[]");
+let allTanks = [...tanks, ...customTanks];
 let history = JSON.parse(localStorage.getItem("wotHistory") || "[]");
 
 const tankName = document.getElementById("tankName");
 const nation = document.getElementById("nation");
-const counter = document.getElementById("counter");
 const historyEl = document.getElementById("history");
+const addPanel = document.getElementById("addPanel");
+const newTankName = document.getElementById("newTankName");
+const newTankNation = document.getElementById("newTankNation");
 
 function save() {
-  localStorage.setItem("wotRemaining", JSON.stringify(remaining));
+  localStorage.setItem("wotCustomTanks", JSON.stringify(customTanks));
   localStorage.setItem("wotHistory", JSON.stringify(history));
 }
 
 function render() {
-  counter.textContent = `Залишилось: ${remaining.length} з ${tanks.length}`;
-
   historyEl.innerHTML = "";
   if (!history.length) {
     historyEl.innerHTML = '<li class="empty">Поки що нічого не випадало.</li>';
@@ -141,15 +164,8 @@ function render() {
 }
 
 document.getElementById("pick").addEventListener("click", () => {
-  if (!remaining.length) {
-    tankName.textContent = "🏆 Усі танки вже випали!";
-    nation.textContent = "";
-    counter.innerHTML = '<span class="done">Скинь список, щоб почати знову.</span>';
-    return;
-  }
-
-  const index = Math.floor(Math.random() * remaining.length);
-  const tank = remaining.splice(index, 1)[0];
+  const index = Math.floor(Math.random() * allTanks.length);
+  const tank = allTanks[index];
 
   tankName.textContent = tank[0];
   nation.textContent = tank[1];
@@ -157,6 +173,51 @@ document.getElementById("pick").addEventListener("click", () => {
 
   save();
   render();
+});
+
+document.getElementById("addTank").addEventListener("click", () => {
+  addPanel.classList.toggle("show");
+  if (addPanel.classList.contains("show")) {
+    newTankName.focus();
+  }
+});
+
+document.getElementById("saveTank").addEventListener("click", () => {
+  const name = newTankName.value.trim();
+  const nationName = newTankNation.value.trim() || "Доданий танк";
+
+  if (!name) {
+    newTankName.focus();
+    return;
+  }
+
+  const tank = [name, nationName];
+  customTanks.push(tank);
+  allTanks.push(tank);
+
+  newTankName.value = "";
+  newTankNation.value = "";
+  addPanel.classList.remove("show");
+
+  save();
+  render();
+});
+
+[newTankName, newTankNation].forEach(input => {
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      document.getElementById("saveTank").click();
+    }
+  });
+});
+
+document.getElementById("clearHistory").addEventListener("click", () => {
+  history = [];
+  save();
+  render();
+});
+
+render();
 });
 
 document.getElementById("reset").addEventListener("click", () => {
@@ -173,6 +234,11 @@ document.getElementById("clearHistory").addEventListener("click", () => {
   save();
   render();
 });
+
+render();
+</script>
+</body>
+</html>
 
 render();
 </script>
