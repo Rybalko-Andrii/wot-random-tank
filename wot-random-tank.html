@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoT Random Tank</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font-family: Arial, sans-serif;
+    background: #111; color: #f3f3f3;
+    display: flex; justify-content: center; align-items: center;
+    padding: 24px;
+  }
+  .app {
+    width: min(720px, 100%);
+    background: #1b1b1b; border: 1px solid #333;
+    border-radius: 22px; padding: 28px;
+    box-shadow: 0 20px 70px rgba(0,0,0,.45);
+  }
+  h1 { margin: 0 0 8px; text-align: center; font-size: clamp(28px, 5vw, 44px); }
+  .sub { text-align: center; color: #aaa; margin-bottom: 24px; }
+  .card {
+    min-height: 220px; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; text-align: center;
+    background: #252525; border: 1px solid #3b3b3b;
+    border-radius: 18px; padding: 24px; margin-bottom: 18px;
+  }
+  .label { color: #999; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+  #tankName { font-size: clamp(36px, 8vw, 72px); font-weight: 800; margin: 12px 0 8px; }
+  #nation { color: #ccc; font-size: 18px; }
+  .counter { color: #8bc34a; margin-top: 14px; }
+  button {
+    border: 0; border-radius: 12px; padding: 16px 20px;
+    font-size: 18px; font-weight: 700; cursor: pointer;
+  }
+  #pick { width: 100%; background: #c63b25; color: white; }
+  #pick:hover { filter: brightness(1.1); }
+  .row { display: flex; gap: 10px; margin-top: 10px; }
+  .row button { flex: 1; background: #333; color: white; }
+  .history {
+    margin-top: 22px; border-top: 1px solid #333; padding-top: 18px;
+  }
+  .history h2 { font-size: 18px; margin: 0 0 10px; }
+  #history { margin: 0; padding-left: 24px; max-height: 220px; overflow: auto; color: #ccc; }
+  #history li { margin: 7px 0; }
+  .empty { color: #777; list-style: none; margin-left: -24px; }
+  .done { color: #8bc34a; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🎲 WoT Random Tank</h1>
+  <div class="sub">Випадковий танк із твого списку — без повторів</div>
+
+  <div class="card">
+    <div class="label">Наступний танк</div>
+    <div id="tankName">Натисни кнопку 🎲</div>
+    <div id="nation"></div>
+    <div id="counter"></div>
+  </div>
+
+  <button id="pick">🎲 ВИПАДКОВО ОБРАТИ ТАНК</button>
+  <div class="row">
+    <button id="reset">🔄 Скинути список</button>
+    <button id="clearHistory">🗑 Очистити історію</button>
+  </div>
+
+  <div class="history">
+    <h2>📜 Уже випало</h2>
+    <ol id="history"></ol>
+  </div>
+</div>
+
+<script>
+const tanks = [
+  ["Rhm. Pzw.", "Німеччина 🇩🇪"], ["E 50 M", "Німеччина 🇩🇪"],
+  ["Leopard 1", "Німеччина 🇩🇪"], ["E 100", "Німеччина 🇩🇪"],
+  ["Maus", "Німеччина 🇩🇪"], ["Pz.Kpfw. VII", "Німеччина 🇩🇪"],
+  ["Grille 15", "Німеччина 🇩🇪"], ["Jg.Pz. E 100", "Німеччина 🇩🇪"],
+  ["G.W. E 100", "Німеччина 🇩🇪"],
+
+  ["T-100 LT", "СРСР 🇷🇺"], ["K-91", "СРСР 🇷🇺"], ["Об. 140", "СРСР 🇷🇺"],
+  ["Об. 430У", "СРСР 🇷🇺"], ["Об. 705А", "СРСР 🇷🇺"], ["ІС-4", "СРСР 🇷🇺"],
+  ["ІС-7", "СРСР 🇷🇺"], ["Об. 277", "СРСР 🇷🇺"], ["СТ-II", "СРСР 🇷🇺"],
+  ["Об. 260", "СРСР 🇷🇺"], ["Об. 452К", "СРСР 🇷🇺"], ["Об. 261", "СРСР 🇷🇺"],
+
+  ["M48 Patton", "США 🇺🇸"], ["M60", "США 🇺🇸"], ["M-V-Y", "США 🇺🇸"],
+  ["T110E5", "США 🇺🇸"], ["T57 Heavy", "США 🇺🇸"], ["Stinger", "США 🇺🇸"],
+  ["T110E3", "США 🇺🇸"], ["T110E4", "США 🇺🇸"], ["T92 HMC", "США 🇺🇸"],
+
+  ["AMX 13 105", "Франція 🇫🇷"], ["EBR 105", "Франція 🇫🇷"],
+  ["AMX 30 B", "Франція 🇫🇷"], ["B-C 25 t", "Франція 🇫🇷"],
+  ["AMX 50 B", "Франція 🇫🇷"], ["AMX M4 54", "Франція 🇫🇷"],
+  ["Foch B", "Франція 🇫🇷"], ["Foch 155", "Франція 🇫🇷"],
+  ["Foch B 7x7", "Франція 🇫🇷"], ["B-C 155 58", "Франція 🇫🇷"],
+
+  ["Centurion AX", "Велика Британія 🇬🇧"], ["Canopener", "Велика Британія 🇬🇧"],
+  ["S. Conqueror", "Велика Британія 🇬🇧"], ["FV4005", "Велика Британія 🇬🇧"],
+  ["FV215b 183", "Велика Британія 🇬🇧"], ["Conqueror GC", "Велика Британія 🇬🇧"],
+
+  ["121", "Китай 🇨🇳"], ["121B", "Китай 🇨🇳"], ["113", "Китай 🇨🇳"],
+  ["WZ-111 5A", "Китай 🇨🇳"],
+
+  ["STB-1", "Японія 🇯🇵"], ["Type 5 Heavy", "Японія 🇯🇵"],
+
+  ["TVP T 50/51", "Чехословаччина 🇨🇿"], ["Vz. 55", "Чехословаччина 🇨🇿"],
+
+  ["Kranvagn", "Швеція 🇸🇪"],
+
+  ["Progetto 65", "Італія 🇮🇹"], ["Carro 45 t", "Італія 🇮🇹"],
+  ["Rinoceronte", "Італія 🇮🇹"], ["Minotauro", "Італія 🇮🇹"]
+];
+
+let remaining = JSON.parse(localStorage.getItem("wotRemaining") || "null") || [...tanks];
+let history = JSON.parse(localStorage.getItem("wotHistory") || "[]");
+
+const tankName = document.getElementById("tankName");
+const nation = document.getElementById("nation");
+const counter = document.getElementById("counter");
+const historyEl = document.getElementById("history");
+
+function save() {
+  localStorage.setItem("wotRemaining", JSON.stringify(remaining));
+  localStorage.setItem("wotHistory", JSON.stringify(history));
+}
+
+function render() {
+  counter.textContent = `Залишилось: ${remaining.length} з ${tanks.length}`;
+
+  historyEl.innerHTML = "";
+  if (!history.length) {
+    historyEl.innerHTML = '<li class="empty">Поки що нічого не випадало.</li>';
+  } else {
+    history.forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = `${item[0]} — ${item[1]}`;
+      historyEl.appendChild(li);
+    });
+  }
+}
+
+document.getElementById("pick").addEventListener("click", () => {
+  if (!remaining.length) {
+    tankName.textContent = "🏆 Усі танки вже випали!";
+    nation.textContent = "";
+    counter.innerHTML = '<span class="done">Скинь список, щоб почати знову.</span>';
+    return;
+  }
+
+  const index = Math.floor(Math.random() * remaining.length);
+  const tank = remaining.splice(index, 1)[0];
+
+  tankName.textContent = tank[0];
+  nation.textContent = tank[1];
+  history.unshift(tank);
+
+  save();
+  render();
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+  remaining = [...tanks];
+  history = [];
+  tankName.textContent = "Натисни кнопку 🎲";
+  nation.textContent = "";
+  save();
+  render();
+});
+
+document.getElementById("clearHistory").addEventListener("click", () => {
+  history = [];
+  save();
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
